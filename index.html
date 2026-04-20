@@ -7,23 +7,35 @@
     <style>
         body { margin: 0; padding: 0; background: #020c1b; color: #e6f1ff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         
-        /* UI OVERLAY (Using your exact style) */
-        #game-view { display: none; position: fixed; inset: 0; z-index: 1000; background: #000; }
+        /* EXACT VOIDCRAFT FRONT UI */
+        .hero { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; text-align: center; }
+        h1 { font-size: 80px; margin: 0; color: #ccd6f6; font-weight: 800; letter-spacing: -2px; }
+        .sub-text { color: #64ffda; letter-spacing: 5px; font-size: 14px; margin-top: 5px; font-weight: bold; }
         
-        #ui-layer { position: absolute; top: 20px; left: 20px; pointer-events: none; z-index: 1010; }
-        .stat-text { font-size: 20px; color: #fff; text-shadow: 2px 2px #000; margin-bottom: 5px; font-weight: bold; }
+        .btn-start { 
+            margin-top: 50px; padding: 20px 60px; background: #64ffda; border: none; 
+            font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 18px; 
+            color: #020c1b; transition: 0.3s;
+        }
+        .btn-start:hover { background: #4ecdb0; transform: translateY(-3px); box-shadow: 0 10px 20px rgba(100, 255, 218, 0.2); }
+
+        /* GAME VIEW CONTAINER */
+        #game-view { display: none; position: fixed; inset: 0; z-index: 1000; background: #010813; }
         
-        /* HEALTH BAR */
-        .health-bg { width: 200px; height: 15px; background: #550000; border: 2px solid #fff; }
+        /* HUD / UI LAYER (Pygame Stats) */
+        #ui-layer { 
+            position: absolute; top: 20px; left: 20px; pointer-events: none; z-index: 1010; 
+            background: rgba(10, 25, 47, 0.7); padding: 15px; border-radius: 8px; border-left: 4px solid #64ffda;
+        }
+        .stat-text { font-size: 16px; color: #ccd6f6; margin-bottom: 5px; font-family: 'Courier New', monospace; }
+        .health-bg { width: 200px; height: 10px; background: #233554; border-radius: 5px; overflow: hidden; margin-top: 10px; }
         #health-bar { width: 100%; height: 100%; background: #64ffda; transition: width 0.3s; }
 
-        .hero { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; text-align: center; }
-        h1 { font-size: 80px; margin: 0; color: #ccd6f6; font-weight: 800; }
-        
-        .btn-start { margin-top: 50px; padding: 20px 60px; background: #64ffda; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 18px; color: #020c1b; }
-
         /* GAME OVER SCREEN */
-        #game-over-screen { display: none; position: fixed; inset: 0; background: rgba(2, 12, 27, 0.9); color: #64ffda; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; }
+        #game-over { 
+            display: none; position: fixed; inset: 0; background: rgba(2, 12, 27, 0.95); 
+            flex-direction: column; justify-content: center; align-items: center; z-index: 2000; 
+        }
 
         canvas { display: block; }
     </style>
@@ -31,21 +43,22 @@
 <body>
 
     <div class="hero" id="home-hero">
-        <h1>Sky Viper</h1>
-        <button class="btn-start" onclick="launchGame()">START GAME</button>
+        <h1 id="title-text">Sky Viper</h1>
+        <p class="sub-text">AIR COMBAT SIMULATOR</p>
+        <button class="btn-start" onclick="launchGame()">GET STARTED</button>
     </div>
 
     <div id="game-view">
         <div id="ui-layer">
-            <div class="stat-text" id="score-display">Score: 0</div>
-            <div class="stat-text" id="high-score-display">High Score: 0</div>
+            <div class="stat-text" id="score-display">SCORE: 0</div>
+            <div class="stat-text" id="high-score-display">BEST: 0</div>
             <div class="health-bg"><div id="health-bar"></div></div>
         </div>
 
-        <div id="game-over-screen">
-            <h1 style="color: #ff4d4d;">GAME OVER</h1>
-            <p id="final-score" style="font-size: 24px; color: #ccd6f6;"></p>
-            <button class="btn-start" onclick="location.reload()">RESTART</button>
+        <div id="game-over">
+            <h1 style="color: #ff4d4d; font-size: 60px; margin: 0;">MISSION FAILED</h1>
+            <p id="final-score" style="font-size: 24px; color: #ccd6f6; margin: 20px 0;"></p>
+            <button class="btn-start" onclick="location.reload()">RE-DEPLOY</button>
         </div>
 
         <canvas id="sky-canvas"></canvas>
@@ -56,11 +69,11 @@
         const ctx = canvas.getContext('2d');
         let gameActive = false;
         let score = 0;
-        let highScore = localStorage.getItem('skyViperHighScore') || 0;
         let health = 100;
-        
+        let highScore = localStorage.getItem('skyViperHigh') || 0;
+
         const keys = {};
-        const player = { x: 100, y: 300, w: 50, h: 50, speed: 6 };
+        const player = { x: 100, y: 300, w: 55, h: 40, speed: 7 };
         let bullets = [];
         let enemies = [];
         let enemyBullets = [];
@@ -72,13 +85,11 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             
-            document.getElementById('high-score-display').innerText = `High Score: ${highScore}`;
+            document.getElementById('high-score-display').innerText = `BEST: ${highScore}`;
             gameActive = true;
             
-            // Enemy Spawn Interval
-            setInterval(() => {
-                if(gameActive) spawnEnemy();
-            }, 1000);
+            // Enemy Spawn Interval (Pygame ADDENEMY logic)
+            setInterval(() => { if(gameActive) spawnEnemy(); }, 1000);
 
             requestAnimationFrame(gameLoop);
         }
@@ -93,32 +104,33 @@
             enemies.push({
                 x: canvas.width + 50,
                 y: Math.random() * (canvas.height - 100) + 50,
-                w: 50, h: 50,
-                speed: Math.random() * 2 + 3,
+                w: 50, h: 40,
+                speed: Math.random() * 3 + 4,
                 lastShot: Date.now(),
-                shootDelay: Math.random() * 1000 + 1500
+                shootDelay: Math.random() * 1200 + 1000
             });
         }
 
         function shoot() {
-            bullets.push({ x: player.x + 50, y: player.y + 22, w: 15, h: 4, speed: 12 });
+            // Player fires RED bullets (Pygame Logic)
+            bullets.push({ x: player.x + 55, y: player.y + 18, w: 18, h: 4, speed: 14 });
         }
 
         function enemyShoot(en) {
-            const dx = player.x - en.x;
-            const dy = player.y - en.y;
+            const dx = (player.x + 25) - en.x;
+            const dy = (player.y + 20) - en.y;
             const dist = Math.sqrt(dx*dx + dy*dy);
             enemyBullets.push({
-                x: en.x, y: en.y + 25,
-                vx: (dx/dist) * 6,
-                vy: (dy/dist) * 6
+                x: en.x, y: en.y + 20,
+                vx: (dx/dist) * 8,
+                vy: (dy/dist) * 8
             });
         }
 
         function update() {
             if(!gameActive) return;
 
-            // Player Movement (Pygame Logic)
+            // Movement Logic (WASD & Arrows)
             if (keys['ArrowUp'] || keys['KeyW']) player.y -= player.speed;
             if (keys['ArrowDown'] || keys['KeyS']) player.y += player.speed;
             if (keys['ArrowLeft'] || keys['KeyA']) player.x -= player.speed;
@@ -127,53 +139,52 @@
             player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
             player.y = Math.max(0, Math.min(canvas.height - player.h, player.y));
 
-            // Bullets Update
+            // Move Bullets
             bullets.forEach((b, i) => {
                 b.x += b.speed;
                 if(b.x > canvas.width) bullets.splice(i, 1);
             });
 
-            // Enemy Update
+            // Enemies Update
             enemies.forEach((en, i) => {
                 en.x -= en.speed;
-                if(en.x < -50) enemies.splice(i, 1);
+                if(en.x < -60) enemies.splice(i, 1);
 
                 if(Date.now() - en.lastShot > en.shootDelay) {
                     enemyShoot(en);
                     en.lastShot = Date.now();
                 }
 
-                // Check Bullet Hit Enemy
+                // Bullet hits Enemy
                 bullets.forEach((b, bi) => {
-                    if(checkCollision(b, en)) {
+                    if(b.x < en.x + en.w && b.x + b.w > en.x && b.y < en.y + en.h && b.y + b.h > en.y) {
                         bullets.splice(bi, 1);
                         enemies.splice(i, 1);
                         score += 10;
-                        explosions.push({x: en.x, y: en.y, timer: 15});
-                        document.getElementById('score-display').innerText = `Score: ${score}`;
+                        explosions.push({x: en.x, y: en.y, timer: 12});
+                        document.getElementById('score-display').innerText = `SCORE: ${score}`;
                     }
                 });
 
-                // Player-Enemy Collision
-                if(checkCollision(player, en)) {
+                // Direct Collision
+                if(player.x < en.x + en.w && player.x + player.w > en.x && player.y < en.y + en.h && player.y + player.h > en.y) {
                     health = 0;
                     endGame();
                 }
             });
 
-            // Enemy Bullets Update
+            // Enemy Bullets hits Player
             enemyBullets.forEach((eb, i) => {
                 eb.x += eb.vx;
                 eb.y += eb.vy;
-                if(checkCollision(eb, player, 10, 10)) {
+                if(eb.x < player.x + player.w && eb.x + 8 > player.x && eb.y < player.y + player.h && eb.y + 8 > player.y) {
                     enemyBullets.splice(i, 1);
-                    health -= 20;
+                    health -= 20; // 20 Damage per hit
                     document.getElementById('health-bar').style.width = health + '%';
                     if(health <= 0) endGame();
                 }
             });
 
-            // Explosions timer
             explosions.forEach((ex, i) => {
                 ex.timer--;
                 if(ex.timer <= 0) explosions.splice(i, 1);
@@ -181,53 +192,46 @@
         }
 
         function draw() {
-            ctx.fillStyle = '#020c1b';
+            ctx.fillStyle = '#010813';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw Player (Teal)
+            // Draw Player (Teal Fighter)
             ctx.fillStyle = '#64ffda';
-            ctx.fillRect(player.x, player.y, player.w, player.h);
+            ctx.beginPath();
+            ctx.moveTo(player.x, player.y + 10);
+            ctx.lineTo(player.x + player.w, player.y + 20);
+            ctx.lineTo(player.x, player.y + 30);
+            ctx.fill();
 
             // Draw Bullets
             ctx.fillStyle = '#ff4d4d';
             bullets.forEach(b => ctx.fillRect(b.x, b.y, b.w, b.h));
 
-            // Draw Enemy Bullets
-            ctx.fillStyle = '#ffff00';
+            // Enemy Bullets
+            ctx.fillStyle = '#f7eb39';
             enemyBullets.forEach(eb => {
-                ctx.beginPath();
-                ctx.arc(eb.x, eb.y, 5, 0, Math.PI*2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(eb.x, eb.y, 4, 0, Math.PI*2); ctx.fill();
             });
 
-            // Draw Enemies
+            // Enemies
             ctx.fillStyle = '#8892b0';
             enemies.forEach(en => ctx.fillRect(en.x, en.y, en.w, en.h));
 
-            // Draw Explosions
+            // Explosions
             explosions.forEach(ex => {
-                ctx.fillStyle = '#ffa500';
-                ctx.beginPath();
-                ctx.arc(ex.x + 25, ex.y + 25, 30, 0, Math.PI*2);
-                ctx.fill();
+                ctx.fillStyle = `rgba(255, 165, 0, ${ex.timer/12})`;
+                ctx.beginPath(); ctx.arc(ex.x + 25, ex.y + 20, 25, 0, Math.PI*2); ctx.fill();
             });
-        }
-
-        function checkCollision(obj1, obj2, w1=null, h1=null) {
-            let width1 = w1 || obj1.w || 15;
-            let height1 = h1 || obj1.h || 4;
-            return obj1.x < obj2.x + 50 && obj1.x + width1 > obj2.x &&
-                   obj1.y < obj2.y + 50 && obj1.y + height1 > obj2.y;
         }
 
         function endGame() {
             gameActive = false;
             if(score > highScore) {
                 highScore = score;
-                localStorage.setItem('skyViperHighScore', highScore);
+                localStorage.setItem('skyViperHigh', highScore);
             }
-            document.getElementById('game-over-screen').style.display = 'flex';
-            document.getElementById('final-score').innerText = `Final Score: ${score}`;
+            document.getElementById('game-over').style.display = 'flex';
+            document.getElementById('final-score').innerText = `TOTAL SCORE: ${score}`;
         }
 
         function gameLoop() {
