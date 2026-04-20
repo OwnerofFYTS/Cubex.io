@@ -82,13 +82,12 @@
             const renderer = new THREE.WebGLRenderer({canvas: canvas, antialias: true});
             renderer.setSize(window.innerWidth, window.innerHeight);
 
-            // Lava Floor
+            // World setup
             const lava = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshBasicMaterial({color: 0xff4400}));
             lava.rotation.x = -Math.PI / 2;
             lava.position.y = -30;
             scene.add(lava);
 
-            // Towers
             for(let i=0; i<8; i++) {
                 const tower = new THREE.Mesh(new THREE.BoxGeometry(10, 1, 10), new THREE.MeshStandardMaterial({color: 0x444d56}));
                 const angle = (i / 8) * Math.PI * 2;
@@ -103,14 +102,17 @@
 
             camera.position.set(30, 3, 30);
 
-            // Controls setup
+            // Physics/Movement Variables
             const keys = {};
+            let velocityY = 0;
+            const gravity = -0.01;
+            const jumpStrength = 0.2;
+            let canJump = true;
+
             window.addEventListener('keydown', (e) => keys[e.code] = true);
             window.addEventListener('keyup', (e) => keys[e.code] = false);
-
             canvas.addEventListener('click', () => canvas.requestPointerLock());
 
-            // Rotation variables
             let pitch = 0, yaw = 0;
             window.addEventListener('mousemove', (e) => {
                 if (document.pointerLockElement === canvas) {
@@ -120,7 +122,6 @@
                 }
             });
 
-            // Inventory logic
             const items = ["DIAMOND BLOCK", "TNT", "ENDER PEARL", "IRON SWORD"];
             setInterval(() => {
                 document.getElementById('item-slot').innerText = items[Math.floor(Math.random()*items.length)];
@@ -130,32 +131,56 @@
                 requestAnimationFrame(animate);
                 
                 if (document.pointerLockElement === canvas) {
-                    const speed = 0.2;
-                    // Minecraft style movement based on yaw
+                    // Speed Logic
+                    let currentSpeed = 0.15;
+                    if (keys['ControlLeft']) currentSpeed = 0.25; // Sprint
+                    if (keys['ShiftLeft']) currentSpeed = 0.06;   // Crouch Walk
+
+                    // Corrected Minecraft Keybinds
                     if(keys['KeyW']) {
-                        camera.position.x -= Math.sin(yaw) * speed;
-                        camera.position.z -= Math.cos(yaw) * speed;
+                        camera.position.x -= Math.sin(yaw) * currentSpeed;
+                        camera.position.z -= Math.cos(yaw) * currentSpeed;
                     }
                     if(keys['KeyS']) {
-                        camera.position.x += Math.sin(yaw) * speed;
-                        camera.position.z += Math.cos(yaw) * speed;
+                        camera.position.x += Math.sin(yaw) * currentSpeed;
+                        camera.position.z += Math.cos(yaw) * currentSpeed;
                     }
                     if(keys['KeyA']) {
-                        camera.position.x -= Math.sin(yaw + Math.PI/2) * speed;
-                        camera.position.z -= Math.cos(yaw + Math.PI/2) * speed;
+                        camera.position.x -= Math.sin(yaw + Math.PI/2) * currentSpeed;
+                        camera.position.z -= Math.cos(yaw + Math.PI/2) * currentSpeed;
                     }
                     if(keys['KeyD']) {
-                        camera.position.x += Math.sin(yaw + Math.PI/2) * speed;
-                        camera.position.z += Math.cos(yaw + Math.PI/2) * speed;
+                        camera.position.x += Math.sin(yaw + Math.PI/2) * currentSpeed;
+                        camera.position.z += Math.cos(yaw + Math.PI/2) * currentSpeed;
+                    }
+
+                    // Jump Logic
+                    if(keys['Space'] && canJump) {
+                        velocityY = jumpStrength;
+                        canJump = false;
                     }
                 }
 
-                // Apply rotation to camera (Minecraft style: YXZ)
+                // Gravity & Floor Collision
+                velocityY += gravity;
+                camera.position.y += velocityY;
+
+                if (camera.position.y <= 3) {
+                    camera.position.y = 3;
+                    velocityY = 0;
+                    canJump = true;
+                }
+
+                // Crouch Visual Effect
+                if (keys['ShiftLeft']) {
+                    camera.position.y = 2.2;
+                }
+
                 camera.rotation.set(pitch, yaw, 0, 'YXZ');
                 
                 if(camera.position.y < -28) { 
-                    alert("LAVA DEATH!"); 
                     camera.position.set(30, 3, 30); 
+                    velocityY = 0;
                 }
                 renderer.render(scene, camera);
             }
