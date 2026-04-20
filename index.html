@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkyViper | Gaming</title>
+    <title>SkyViper | Gaming Lobby</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         
@@ -17,129 +17,139 @@
             overflow: hidden;
         }
 
-        /* Navbar for Top Right */
+        /* Top Right Button */
         .navbar {
             position: absolute;
-            top: 20px;
-            right: 30px;
+            top: 25px;
+            right: 35px;
         }
 
         .nav-btn {
-            padding: 10px 25px;
+            padding: 10px 20px;
             border-radius: 8px;
             cursor: pointer;
+            border: 1px solid rgba(79, 172, 254, 0.5);
+            background: rgba(255, 255, 255, 0.05);
+            color: #4facfe;
             font-weight: 600;
             transition: 0.3s;
-            border: 1px solid #4facfe;
-            font-size: 14px;
-            background: transparent;
-            color: #4facfe;
         }
 
-        .nav-btn:hover { background: rgba(79, 172, 254, 0.1); }
+        .nav-btn:hover { background: #4facfe; color: white; }
 
-        /* Center Content */
+        /* Central Lobby Section */
         .main-lobby {
             text-align: center;
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(25px);
-            padding: 60px 80px;
-            border-radius: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 50px rgba(0,0,0,0.7);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            padding: 80px 100px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
         }
 
         h1 {
-            font-size: 5rem;
-            letter-spacing: 8px;
+            font-size: 5.5rem;
+            letter-spacing: 10px;
             background: linear-gradient(to right, #00f2fe, #4facfe);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: 900;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 0 15px rgba(79, 172, 254, 0.3));
         }
 
         .subtitle {
-            color: #888;
-            font-size: 1.1rem;
-            letter-spacing: 2px;
-            margin-bottom: 30px;
+            color: #aaa;
+            font-size: 1.2rem;
+            letter-spacing: 3px;
+            margin-bottom: 40px;
+            text-transform: uppercase;
         }
 
-        /* Get Started Button under SkyViper */
-        .lobby-get-started {
-            display: inline-block;
-            padding: 15px 40px;
+        /* Center Get Started Button */
+        .center-btn {
+            padding: 18px 50px;
             background: #4facfe;
             color: white;
-            text-decoration: none;
+            font-size: 1.1rem;
             font-weight: bold;
-            border-radius: 30px;
-            transition: 0.3s;
             border: none;
+            border-radius: 50px;
             cursor: pointer;
-            font-size: 1rem;
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+            transition: 0.4s;
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.4);
         }
 
-        .lobby-get-started:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.6);
+        .center-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 35px rgba(79, 172, 254, 0.6);
+            background: #00f2fe;
         }
 
-        /* Modal */
+        /* Modal Overlay */
         .modal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.9);
             justify-content: center; align-items: center;
-            z-index: 1000;
+            z-index: 2000;
         }
 
         .modal-box {
-            background: #161b22;
-            padding: 40px;
-            border-radius: 20px;
-            width: 380px;
-            border: 1px solid #30363d;
-            position: relative;
+            background: #11141d;
+            padding: 45px;
+            border-radius: 25px;
+            width: 400px;
+            border: 1px solid #222;
+            text-align: center;
         }
+
+        .modal-box h2 { margin-bottom: 25px; font-size: 24px; color: #fff; }
 
         input {
             width: 100%;
-            padding: 14px;
-            margin: 10px 0;
-            background: #0d1117;
-            border: 1px solid #30363d;
+            padding: 15px;
+            margin: 12px 0;
+            background: #090b10;
+            border: 1px solid #333;
             color: white;
-            border-radius: 10px;
+            border-radius: 12px;
             outline: none;
+            font-size: 1rem;
         }
 
+        input:focus { border-color: #4facfe; }
+
+        /* Error Label */
         #error-msg {
             color: #ff4d4d;
-            font-size: 13px;
-            margin-top: 5px;
+            font-size: 14px;
+            margin-bottom: 15px;
             display: none;
+            font-weight: 500;
         }
 
         .submit-btn {
             width: 100%;
-            padding: 14px;
+            padding: 15px;
             background: #4facfe;
             border: none;
             color: white;
             font-weight: bold;
-            border-radius: 10px;
-            margin-top: 20px;
+            border-radius: 12px;
             cursor: pointer;
+            margin-top: 10px;
         }
 
-        .close-x {
-            position: absolute;
-            top: 15px; right: 20px;
-            color: #888; cursor: pointer; font-size: 20px;
+        .close-btn {
+            margin-top: 15px;
+            color: #555;
+            cursor: pointer;
+            font-size: 14px;
+            display: block;
         }
     </style>
 </head>
@@ -152,22 +162,21 @@
     <div class="main-lobby">
         <h1>SKY VIPER</h1>
         <p class="subtitle">All 2D Games In One Website</p>
-        <button class="lobby-get-started" onclick="openModal()">Get Started</button>
+        <button class="center-btn" onclick="openModal()">Get Started</button>
     </div>
 
     <div id="authModal" class="modal">
         <div class="modal-box">
-            <span class="close-x" onclick="closeModal()">&times;</span>
-            <h2 style="margin-bottom: 20px; color: #4facfe;">Get Started</h2>
-            
+            <h2>Enter Details</h2>
             <form id="authForm">
-                <input type="email" id="email" placeholder="Email Address" required>
-                <input type="password" id="password" placeholder="Password" required>
+                <input type="email" id="email" placeholder="Email Address (e.g. name@gmail.com)" required>
+                <input type="password" id="password" placeholder="Password (Min 6 chars)" required>
                 
-                <p id="error-msg">Please enter a valid email and password!</p>
+                <p id="error-msg">Incorrect email format or password too short!</p>
                 
                 <button type="submit" class="submit-btn">Continue</button>
             </form>
+            <span class="close-btn" onclick="closeModal()">Close</span>
         </div>
     </div>
 
@@ -186,17 +195,21 @@
             modal.style.display = 'none';
         }
 
+        // Real Logic Fix
         authForm.onsubmit = function(e) {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
 
-            // Fix: Ab koi bhi email aur password (min 3 chars) accept hoga
-            if(email.includes('@') && pass.length >= 3) {
-                alert("Login Successful! Redirecting to SkyViper...");
+            // Check if email has @ and password is at least 6 characters
+            if (email.includes('@') && email.includes('.') && pass.length >= 6) {
+                errorMsg.style.display = 'none';
+                alert("Success! Welcome to SkyViper Lobby.");
                 closeModal();
             } else {
+                // Agar galat hai toh error dikhao
                 errorMsg.style.display = 'block';
+                errorMsg.innerText = "Incorrect email or password!";
             }
         };
 
