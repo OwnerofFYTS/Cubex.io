@@ -112,25 +112,35 @@ wall(50,102,100,2);
 wall(-2,50,2,100);
 wall(102,50,2,100);
 
-/* 🥔 REALISTIC POTATO (UPDATED TEXTURE ONLY) */
-const potatoGeo = new THREE.SphereGeometry(1.5,32,32);
+/* 🧙 WITCH REPLACEMENT (INSTEAD OF POTATO) */
+const witch = new THREE.Group();
 
-const potatoMat = new THREE.MeshStandardMaterial({
-color: 0x8b5a2b,
-roughness: 1,
-metalness: 0
-});
+/* body (cloak) */
+const body = new THREE.Mesh(
+new THREE.ConeGeometry(1.2,2.5,8),
+new THREE.MeshStandardMaterial({color:0x2b2b2b})
+);
+body.position.y = 1.2;
+witch.add(body);
 
-/* slight procedural variation for dirty look */
-for(let i=0;i<10;i++){
-potatoMat.color.r += (Math.random()-0.5)*0.01;
-potatoMat.color.g += (Math.random()-0.5)*0.01;
-potatoMat.color.b += (Math.random()-0.5)*0.01;
-}
+/* head */
+const head = new THREE.Mesh(
+new THREE.SphereGeometry(0.5,16,16),
+new THREE.MeshStandardMaterial({color:0xffccaa})
+);
+head.position.y = 2.6;
+witch.add(head);
 
-const potato = new THREE.Mesh(potatoGeo,potatoMat);
-potato.position.set(10,2.2,10);
-scene.add(potato);
+/* hat */
+const hatBase = new THREE.Mesh(
+new THREE.ConeGeometry(0.6,1.2,8),
+new THREE.MeshStandardMaterial({color:0x111111})
+);
+hatBase.position.y = 3.4;
+witch.add(hatBase);
+
+witch.position.set(10,0,10);
+scene.add(witch);
 
 /* INPUT */
 let keys={};
@@ -204,20 +214,20 @@ velocityY=0;
 canJump=true;
 }
 
-/* POTATO AI */
+/* WITCH AI */
 let playerPos=new THREE.Vector3();
 controls.getObject().getWorldPosition(playerPos);
 
-let dir=new THREE.Vector3().subVectors(playerPos,potato.position);
+let dir=new THREE.Vector3().subVectors(playerPos,witch.position);
 dir.y=0;
 dir.normalize();
 
-let dist=potato.position.distanceTo(playerPos);
+let dist=witch.position.distanceTo(playerPos);
 let aiSpeed=dist>6?0.25:0.18;
 
-potato.position.add(dir.multiplyScalar(aiSpeed));
+witch.position.add(dir.multiplyScalar(aiSpeed));
 
-potato.lookAt(playerPos);
+witch.lookAt(playerPos);
 
 /* COLLISION */
 if(dist<1.4){
