@@ -8,11 +8,12 @@
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; color: #fff; font-family: 'Courier New', Courier, monospace; }
         #game-wrapper { position: relative; width: 100%; height: 100vh; }
         
+        /* Theme Menu */
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle, #1a0000 0%, #000 100%);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 100; transition: opacity 0.8s;
+            z-index: 1000; transition: opacity 0.8s;
         }
 
         h1 { font-size: 4rem; letter-spacing: 12px; margin: 0; color: #fff; text-shadow: 0 0 20px #f00; }
@@ -25,24 +26,24 @@
         }
         #play-button:hover { background: #ff3e3e; color: white; box-shadow: 0 0 30px #ff3e3e; }
 
-        /* Stamina Bar UI */
+        /* Stamina Bar - Fixed Position */
         #stamina-container {
-            position: absolute; bottom: 30px; left: 50%;
-            transform: translateX(-50%); width: 200px; height: 10px;
-            border: 1px solid #400; background: rgba(0,0,0,0.5);
-            display: none; z-index: 60;
+            position: fixed; bottom: 40px; left: 50%;
+            transform: translateX(-50%); width: 250px; height: 12px;
+            border: 2px solid #400; background: rgba(0,0,0,0.8);
+            display: none; z-index: 9999; /* Isko sabse ooper rakha hai */
         }
-        #stamina-bar { width: 100%; height: 100%; background: #ff0000; transition: width 0.1s; }
+        #stamina-bar { width: 100%; height: 100%; background: #ff0000; transition: width 0.1s linear; }
 
         #reticle {
             position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
             background: rgba(255, 0, 0, 0.7); border-radius: 50%; transform: translate(-50%, -50%);
-            pointer-events: none; display: none; z-index: 50;
+            pointer-events: none; display: none; z-index: 500;
         }
 
         #game-over {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(40, 0, 0, 0.95); display: none; z-index: 200;
+            background: rgba(40, 0, 0, 0.95); display: none; z-index: 2000;
             flex-direction: column; justify-content: center; align-items: center;
         }
     </style>
@@ -52,7 +53,7 @@
 <div id="game-wrapper">
     <div id="ui-layer">
         <h1>VOID AURA</h1>
-        <div class="subtitle">RUN. HE IS COMING.</div>
+        <div class="subtitle">HE IS FASTER THAN YOU</div>
         <button id="play-button">PLAY</button>
     </div>
 
@@ -88,7 +89,7 @@
     player.add(camera);
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.1));
-    const flashlight = new THREE.SpotLight(0xffffff, 2, 30, Math.PI/4, 0.3);
+    const flashlight = new THREE.SpotLight(0xffffff, 2, 35, Math.PI/4, 0.3);
     camera.add(flashlight);
     flashlight.target.position.set(0, 0, -1);
     camera.add(flashlight.target);
@@ -110,11 +111,13 @@
     const staminaBar = document.getElementById('stamina-bar');
 
     playBtn.onclick = () => controls.lock();
+    
     controls.addEventListener('lock', () => { 
         ui.style.display = 'none';
         staminaUI.style.display = 'block';
         document.getElementById('reticle').style.display = 'block';
     });
+    
     controls.addEventListener('unlock', () => { 
         if(document.getElementById('game-over').style.display !== 'flex') {
             ui.style.display = 'flex';
@@ -125,12 +128,11 @@
     let moveF = false, moveB = false, moveL = false, moveR = false, isCrouching = false, canJump = false, isRunning = false;
     let velocity = new THREE.Vector3();
     
-    // Stamina variables
     let stamina = 100;
     const maxStamina = 100;
     
     const NORMAL_SPEED = 25.0;
-    const SPRINT_SPEED = 35.0; // Thora zyada speed
+    const SPRINT_SPEED = 34.0; // Sprint speed
     const STALKER_BASE_SPEED = NORMAL_SPEED * 1.01;
 
     document.onkeydown = (e) => {
@@ -140,6 +142,7 @@
         if(e.code === 'KeyD') moveR = true;
         if(e.code === 'Space' && canJump) { velocity.y = 7.5; canJump = false; }
         if(e.code === 'ShiftLeft') isCrouching = true;
+        // Ctrl for Sprint
         if(e.code === 'ControlLeft' && stamina > 0) isRunning = true;
     };
     document.onkeyup = (e) => {
@@ -158,16 +161,15 @@
         const delta = (time - lastTime) / 1000;
 
         if (controls.isLocked) {
-            // Stamina Management
+            // Stamina Management (5 seconds limit)
             if (isRunning && (moveF || moveB || moveL || moveR) && stamina > 0) {
-                stamina -= 20 * delta; // Roughly 5 seconds of sprint
+                stamina -= 20 * delta; 
                 if (stamina <= 0) { stamina = 0; isRunning = false; }
             } else {
-                if (stamina < maxStamina) stamina += 10 * delta; // Recovery speed
+                if (stamina < maxStamina) stamina += 12 * delta; // Faster refill
             }
             staminaBar.style.width = stamina + "%";
 
-            // Movement Speed Calculation
             let currentSpeed = isRunning ? SPRINT_SPEED : NORMAL_SPEED;
             if (isCrouching) currentSpeed *= 0.5;
 
@@ -189,7 +191,7 @@
 
             if (player.position.y < tH) { velocity.y = 0; player.position.y = tH; canJump = true; }
 
-            // Stalker (Always 1% faster than normal speed)
+            // Stalker logic
             const stalkerDir = new THREE.Vector3().subVectors(player.position, stalker.position);
             stalkerDir.y = 0; stalkerDir.normalize();
             stalker.position.x += stalkerDir.x * (STALKER_BASE_SPEED * 0.13) * delta; 
