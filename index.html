@@ -3,69 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOID AURA | BLACKOUT</title>
+    <title>VOID AURA | BRIGHT & CLEAR</title>
     <style>
-        /* Body and Game Container - Strict Black */
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background-color: #000 !important; 
-            color: #fff; font-family: sans-serif; cursor: none;
+            overflow: hidden; background-color: #eee; 
+            color: #000; font-family: sans-serif; cursor: none;
         }
-        #game-container { 
-            position: relative; width: 100%; height: 100vh; 
-            background-color: #000 !important; 
-        }
+        #game-container { position: relative; width: 100%; height: 100vh; }
         
-        /* UI Overlay - Strict Black */
         #ui-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; display: flex; flex-direction: column; 
-            justify-content: center; align-items: center;
-            z-index: 10000; cursor: auto;
+            background: rgba(255, 255, 255, 1); display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; z-index: 10000; cursor: auto;
         }
 
         #crosshair {
             position: absolute; top: 50%; left: 50%;
-            width: 14px; height: 14px;
-            transform: translate(-50%, -50%);
+            width: 20px; height: 20px; transform: translate(-50%, -50%);
             z-index: 5000; pointer-events: none;
         }
-        #crosshair::before, #crosshair::after { content: ''; position: absolute; background: #fff; opacity: 0.5; }
-        #crosshair::before { top: 50%; left: 0; width: 100%; height: 1.5px; transform: translateY(-50%); }
-        #crosshair::after { left: 50%; top: 0; width: 1.5px; height: 100%; transform: translateX(-50%); }
+        #crosshair::before, #crosshair::after { content: ''; position: absolute; background: #ff4400; }
+        #crosshair::before { top: 50%; left: 0; width: 100%; height: 2px; transform: translateY(-50%); }
+        #crosshair::after { left: 50%; top: 0; width: 2px; height: 100%; transform: translateX(-50%); }
 
         #stamina-bar {
             position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-            width: 180px; height: 6px; background: #111; border: 1px solid #333;
+            width: 220px; height: 10px; background: #ccc; border: 1px solid #ff4400; border-radius: 5px;
         }
-        #stamina-fill { width: 100%; height: 100%; background: #fff; }
+        #stamina-fill { width: 100%; height: 100%; background: #ff4400; }
 
         #game-over {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; display: none; z-index: 20000;
+            background: #fff; display: none; z-index: 20000;
             flex-direction: column; justify-content: center; align-items: center; cursor: auto;
         }
-
-        #start-btn { 
-            padding: 15px 50px; cursor: pointer; background: #fff; 
-            border: none; color: #000; font-weight: bold; font-size: 1.1rem; 
-        }
+        #start-btn { padding: 15px 50px; cursor: pointer; background: #ff4400; border: none; color: #fff; font-weight: bold; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
     <div id="ui-overlay">
-        <h1 style="letter-spacing: 12px; margin-bottom: 5px;">VOID AURA</h1>
-        <p style="color: #444; font-size: 0.9rem; margin-bottom: 40px;">SPACE: Jump | CTRL: Run | SHIFT: Crouch</p>
-        <button id="start-btn">PLAY GAME</button>
+        <h1 style="color: #ff4400; font-size: 3rem; margin-bottom: 10px;">VOID AURA</h1>
+        <p style="margin-bottom: 30px;">SPACE: Jump | CTRL: Run | SHIFT: Crouch</p>
+        <button id="start-btn">PLAY</button>
     </div>
 
     <div id="crosshair"></div>
     <div id="stamina-bar"><div id="stamina-fill"></div></div>
     
     <div id="game-over">
-        <h1 style="font-size: 3rem; color: #fff;">MASHED</h1>
+        <h1 style="color: red; font-size: 3rem;">MASHED!</h1>
         <button onclick="location.reload()" style="padding: 10px 30px; cursor: pointer;">RETRY</button>
     </div>
 </div>
@@ -75,8 +64,8 @@
 
 <script>
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000); // Strict Black
-    scene.fog = new THREE.Fog(0x000000, 1, 40);
+    scene.background = new THREE.Color(0xdddddd); // Wapis Bright Background
+    scene.fog = new THREE.Fog(0xdddddd, 10, 120);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -88,47 +77,36 @@
     scene.add(player);
     player.add(camera);
 
-    // Minimum Ambient Light so the Potato is barely visible
-    scene.add(new THREE.AmbientLight(0xffffff, 0.04));
+    // --- BRIGHT LIGHTING ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    scene.add(ambientLight);
     
-    // Grid (Very dark)
-    const grid = new THREE.GridHelper(1000, 120, 0x111111, 0x080808);
+    const sunLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    sunLight.position.set(5, 15, 5);
+    scene.add(sunLight);
+
+    const grid = new THREE.GridHelper(1000, 60, 0xaaaaaa, 0xcccccc);
     scene.add(grid);
 
-    // --- POTATO ---
+    // --- POTATO (VISIBILITY ON) ---
     const potatoGeo = new THREE.SphereGeometry(1.6, 32, 32);
     potatoGeo.scale(1.2, 1.5, 1.1);
-    const potatoMat = new THREE.MeshStandardMaterial({ color: 0x3d2511 });
+    const potatoMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.5 });
     const stalker = new THREE.Mesh(potatoGeo, potatoMat);
-    stalker.position.set(0, 1.6, 30);
+    stalker.position.set(0, 1.6, 35);
     scene.add(stalker);
-
-    // Small dim light follow potato
-    const pLight = new THREE.PointLight(0x442200, 1, 10);
-    stalker.add(pLight);
 
     const controls = new THREE.PointerLockControls(camera, document.body);
     const startBtn = document.getElementById('start-btn');
 
     startBtn.onclick = () => {
-        // Force Fullscreen
-        const body = document.documentElement;
-        if (body.requestFullscreen) body.requestFullscreen();
-        else if (body.webkitRequestFullscreen) body.webkitRequestFullscreen();
-        
+        const doc = document.documentElement;
+        if (doc.requestFullscreen) doc.requestFullscreen();
         controls.lock();
     };
 
     controls.addEventListener('lock', () => {
         document.getElementById('ui-overlay').style.display = 'none';
-        document.body.style.cursor = 'none';
-    });
-    
-    controls.addEventListener('unlock', () => {
-        if (document.getElementById('game-over').style.display !== 'flex') {
-            document.getElementById('ui-overlay').style.display = 'flex';
-        }
-        document.body.style.cursor = 'auto';
     });
 
     let keys = {};
@@ -142,15 +120,13 @@
     function gameLoop() {
         requestAnimationFrame(gameLoop);
         if (controls.isLocked) {
-            // Crouch Logic
             let targetHeight = keys['ShiftLeft'] ? 0.9 : 1.7;
             player.position.y += (targetHeight - player.position.y) * 0.15;
 
-            // Movement Speed
             let isRunning = (keys['ControlLeft'] || keys['ControlRight']) && stamina > 0;
-            let speed = isRunning ? 0.26 : 0.13;
+            let speed = isRunning ? 0.28 : 0.14;
 
-            if (isRunning && (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'])) stamina -= 0.6;
+            if (isRunning && (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'])) stamina -= 0.5;
             else if (stamina < 100) stamina += 0.3;
             document.getElementById('stamina-fill').style.width = stamina + "%";
 
@@ -159,9 +135,8 @@
             if (keys['KeyA']) controls.moveRight(-speed);
             if (keys['KeyD']) controls.moveRight(speed);
 
-            // Jump Logic
             if (keys['Space'] && canJump) {
-                velocityY = 0.18;
+                velocityY = 0.2;
                 canJump = false;
             }
             player.position.y += velocityY;
@@ -173,13 +148,13 @@
                 canJump = true;
             }
 
-            // Potato AI
+            // Potato Follow
             const dir = new THREE.Vector3().subVectors(player.position, stalker.position);
             dir.y = 0; dir.normalize();
-            stalker.position.add(dir.multiplyScalar(0.06));
+            stalker.position.add(dir.multiplyScalar(0.075));
             stalker.lookAt(player.position.x, 1.6, player.position.z);
 
-            // Distance Check (Only Mashed if very close)
+            // Accurate Touch Death
             if (player.position.distanceTo(stalker.position) < 2.5) {
                 document.getElementById('game-over').style.display = 'flex';
                 controls.unlock();
