@@ -82,7 +82,15 @@
     const controls = new THREE.PointerLockControls(camera, document.body);
     const playBtn = document.getElementById('play-button');
     
-    playBtn.onclick = () => controls.lock();
+    // FULLSCREEN TRIGGER
+    playBtn.onclick = () => {
+        controls.lock();
+        let elem = document.documentElement;
+        if (elem.requestFullscreen) elem.requestFullscreen();
+        else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+        else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
+    };
+
     controls.addEventListener('lock', () => { 
         document.getElementById('ui-layer').style.display = 'none';
         document.getElementById('stamina-container').style.display = 'block';
@@ -120,7 +128,6 @@
 
         if (controls.isLocked) {
             const isMoving = (moveF || moveB || moveL || moveR);
-            
             let currentSpeed = 25.0;
             let targetFOV = 75;
 
@@ -164,15 +171,12 @@
             player.position.y += (tH - player.position.y) * 0.1 + velocity.y * delta;
             if (player.position.y < tH) { velocity.y = 0; player.position.y = tH; canJump = true; }
 
-            // Stalker AI
             const dir = new THREE.Vector3().subVectors(player.position, stalker.position);
             dir.y = 0; dir.normalize();
             stalker.position.x += dir.x * (25.5 * 0.13) * delta; 
             stalker.position.z += dir.z * (25.5 * 0.13) * delta;
             stalker.lookAt(player.position.x, 1.75, player.position.z);
 
-            // FINAL HITBOX FIX: 0.3 distance (Extreme Close)
-            // Ab dushman ko bilkul player ke andar ghusna parega pakarne ke liye.
             if(player.position.distanceTo(stalker.position) < 0.3) {
                 document.getElementById('game-over').style.display = 'flex';
                 controls.unlock();
