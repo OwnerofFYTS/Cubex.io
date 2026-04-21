@@ -8,7 +8,6 @@
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; color: #fff; font-family: 'Courier New', Courier, monospace; }
         #game-wrapper { position: relative; width: 100%; height: 100vh; }
         
-        /* Professional Dark Menu */
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle, #1a0000 0%, #000 100%);
@@ -26,17 +25,15 @@
         }
         #play-button:hover { background: #ff3e3e; color: white; box-shadow: 0 0 30px #ff3e3e; }
 
-        /* HUD */
         #reticle {
             position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
             background: rgba(255, 0, 0, 0.7); border-radius: 50%; transform: translate(-50%, -50%);
-            pointer-events: none; display: none; z-index: 50; box-shadow: 0 0 5px red;
+            pointer-events: none; display: none; z-index: 50;
         }
 
-        /* Game Over Screen */
         #game-over {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(40, 0, 0, 0.9); display: none; z-index: 200;
+            background: rgba(40, 0, 0, 0.95); display: none; z-index: 200;
             flex-direction: column; justify-content: center; align-items: center;
         }
     </style>
@@ -48,12 +45,11 @@
         <h1>VOID AURA</h1>
         <div class="subtitle">HE IS FASTER THAN YOU</div>
         <button id="play-button">PLAY</button>
-        <p style="margin-top: 20px; color: #444; font-size: 0.8rem;">WASD: Move | Space: Jump | Shift: Crouch</p>
     </div>
 
     <div id="game-over">
-        <h1 style="color: #ff0000; text-shadow: 0 0 30px black;">GAME OVER</h1>
-        <p style="letter-spacing: 3px;">THE RED BLOCK CAUGHT YOU</p>
+        <h1 style="color: #ff0000;">GAME OVER</h1>
+        <p>THE RED BLOCK CAUGHT YOU</p>
         <button onclick="location.reload()" style="margin-top:20px; padding:10px 30px; background:none; border:1px solid white; color:white; cursor:pointer;">RESTART</button>
     </div>
 
@@ -64,65 +60,68 @@
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/PointerLockControls.js"></script>
 
 <script>
-    // Scene Setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
-    scene.fog = new THREE.Fog(0x000000, 1, 20);
+    scene.background = new THREE.Color(0x020202);
+    // Fog ko thora kam kiya taake rasta nazar aaye
+    scene.fog = new THREE.Fog(0x020202, 1, 45);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById('game-wrapper').appendChild(renderer.domElement);
 
-    // Player Group
     const player = new THREE.Group();
     player.position.set(0, 1.7, 0);
     scene.add(player);
     player.add(camera);
 
-    // Light (Flashlight)
-    const light = new THREE.SpotLight(0xffffff, 1.5, 15, Math.PI/6, 0.5);
-    camera.add(light);
-    light.target.position.set(0, 0, -1);
-    camera.add(light.target);
+    // Flashlight aur Ambient Light taake andhera bilkul black na ho
+    const ambient = new THREE.AmbientLight(0xffffff, 0.1); 
+    scene.add(ambient);
 
-    // Floor
-    const grid = new THREE.GridHelper(200, 100, 0x220000, 0x050505);
+    const flashlight = new THREE.SpotLight(0xffffff, 2, 30, Math.PI/4, 0.3);
+    camera.add(flashlight);
+    flashlight.target.position.set(0, 0, -1);
+    camera.add(flashlight.target);
+
+    // Floor Grid (Visual guide)
+    const grid = new THREE.GridHelper(300, 100, 0x440000, 0x111111);
     scene.add(grid);
 
-    // RED BLOCK (The Chaser)
-    const stalker = new THREE.Mesh(
-        new THREE.BoxGeometry(1.2, 3, 1.2),
-        new THREE.MeshBasicMaterial({ color: 0xff0000 })
-    );
-    stalker.position.set(10, 1.5, 20); // Start position
+    // RED BLOCK (The Stalker)
+    const stalkerGeo = new THREE.BoxGeometry(1.5, 3.5, 1.5);
+    const stalkerMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const stalker = new THREE.Mesh(stalkerGeo, stalkerMat);
+    stalker.position.set(0, 1.75, 25); // Thora qareeb rakha hai taake dikhai de
     scene.add(stalker);
 
-    // Controls Logic
     const controls = new THREE.PointerLockControls(camera, document.body);
     const playBtn = document.getElementById('play-button');
     const ui = document.getElementById('ui-layer');
 
     playBtn.onclick = () => controls.lock();
     controls.addEventListener('lock', () => { 
-        ui.style.opacity = '0'; 
-        setTimeout(()=> ui.style.display = 'none', 800);
+        ui.style.display = 'none';
         document.getElementById('reticle').style.display = 'block';
+    });
+    controls.addEventListener('unlock', () => { 
+        if(document.getElementById('game-over').style.display !== 'flex') {
+            ui.style.display = 'flex';
+        }
     });
 
     let moveF = false, moveB = false, moveL = false, moveR = false, isCrouching = false, canJump = false;
     let velocity = new THREE.Vector3();
     
-    // Normal Speed Config
-    const PLAYER_SPEED = 28.0; 
-    const STALKER_SPEED = PLAYER_SPEED * 1.01; // 1% faster than player
+    const PLAYER_SPEED = 25.0; 
+    const STALKER_SPEED = PLAYER_SPEED * 1.01; 
 
     document.onkeydown = (e) => {
         if(e.code === 'KeyW') moveF = true;
         if(e.code === 'KeyS') moveB = true;
         if(e.code === 'KeyA') moveL = true;
         if(e.code === 'KeyD') moveR = true;
-        if(e.code === 'Space' && canJump) { velocity.y = 8; canJump = false; }
+        if(e.code === 'Space' && canJump) { velocity.y = 7.5; canJump = false; }
         if(e.code === 'ShiftLeft') isCrouching = true;
     };
     document.onkeyup = (e) => {
@@ -140,11 +139,9 @@
         const delta = (time - lastTime) / 1000;
 
         if (controls.isLocked) {
-            // Player Physics
-            const friction = 10;
-            velocity.x -= velocity.x * friction * delta;
-            velocity.z -= velocity.z * friction * delta;
-            velocity.y -= 22 * delta; // Gravity
+            velocity.x -= velocity.x * 10 * delta;
+            velocity.z -= velocity.z * 10 * delta;
+            velocity.y -= 20 * delta; 
 
             if (moveF) velocity.z -= PLAYER_SPEED * delta;
             if (moveB) velocity.z += PLAYER_SPEED * delta;
@@ -154,24 +151,22 @@
             controls.moveRight(velocity.x * delta);
             controls.moveForward(-velocity.z * delta);
 
-            // Crouch & Jump Logic
-            let targetHeight = isCrouching ? 0.8 : 1.7;
-            player.position.y += (targetHeight - player.position.y) * 0.12;
+            let tH = isCrouching ? 0.8 : 1.7;
+            player.position.y += (tH - player.position.y) * 0.1;
             player.position.y += velocity.y * delta;
 
-            if (player.position.y < targetHeight) {
-                velocity.y = 0; player.position.y = targetHeight; canJump = true;
-            }
+            if (player.position.y < tH) { velocity.y = 0; player.position.y = tH; canJump = true; }
 
-            // STALKER AI (1% Faster)
-            const dir = new THREE.Vector3().subVectors(player.position, stalker.position).normalize();
-            stalker.position.x += dir.x * (STALKER_SPEED * 0.15) * delta; // Scaled for frame rate
-            stalker.position.z += dir.z * (STALKER_SPEED * 0.15) * delta;
-            stalker.lookAt(player.position.x, 1.5, player.position.z);
+            // Stalker Movement - 1% faster
+            const dir = new THREE.Vector3().subVectors(player.position, stalker.position);
+            dir.y = 0; 
+            dir.normalize();
+            stalker.position.x += dir.x * (STALKER_SPEED * 0.13) * delta; 
+            stalker.position.z += dir.z * (STALKER_SPEED * 0.13) * delta;
+            stalker.lookAt(player.position.x, 1.75, player.position.z);
 
-            // Death Check
-            const dist = player.position.distanceTo(stalker.position);
-            if(dist < 1.8) {
+            // Distance check
+            if(player.position.distanceTo(stalker.position) < 1.8) {
                 document.getElementById('game-over').style.display = 'flex';
                 controls.unlock();
             }
