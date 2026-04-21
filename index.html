@@ -3,42 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOID AURA | HORROR FPS</title>
+    <title>VOID AURA | HORROR PROTOCOL</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; color: #fff; font-family: 'Courier New', Courier, monospace; }
         #game-wrapper { position: relative; width: 100%; height: 100vh; }
         
-        /* Horror Menu */
+        /* Professional Dark Menu */
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: black;
+            background: radial-gradient(circle, #1a0000 0%, #000 100%);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 100; transition: opacity 1.5s;
+            z-index: 100; transition: opacity 0.8s;
         }
 
-        h1 { font-size: 4rem; letter-spacing: 15px; margin: 0; color: #300; text-shadow: 0 0 30px #f00; animation: flicker 2s infinite; }
-        @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } 80% { opacity: 0.9; } }
-
-        .subtitle { color: #555; margin-bottom: 50px; letter-spacing: 5px; font-size: 0.8rem; }
+        h1 { font-size: 4rem; letter-spacing: 12px; margin: 0; color: #fff; text-shadow: 0 0 20px #f00; }
+        .subtitle { color: #ff3e3e; margin-bottom: 40px; letter-spacing: 5px; font-size: 0.9rem; opacity: 0.6; }
 
         #play-button {
-            padding: 15px 50px; background: transparent; border: 1px solid #400;
-            color: #800; font-size: 1.5rem; cursor: pointer; transition: 0.5s;
-            letter-spacing: 10px;
+            padding: 15px 60px; background: transparent; border: 2px solid #ff3e3e;
+            color: #ff3e3e; font-size: 1.2rem; cursor: pointer; transition: 0.3s;
+            letter-spacing: 5px; font-weight: bold;
         }
-        #play-button:hover { background: #200; color: #f00; box-shadow: 0 0 40px #f00; border-color: #f00; }
+        #play-button:hover { background: #ff3e3e; color: white; box-shadow: 0 0 30px #ff3e3e; }
 
+        /* HUD */
         #reticle {
-            position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
-            background: red; border-radius: 50%; transform: translate(-50%, -50%);
-            pointer-events: none; display: none; z-index: 50; box-shadow: 0 0 10px red;
+            position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
+            background: rgba(255, 0, 0, 0.7); border-radius: 50%; transform: translate(-50%, -50%);
+            pointer-events: none; display: none; z-index: 50; box-shadow: 0 0 5px red;
         }
 
-        /* Death Overlay */
-        #death-screen {
+        /* Game Over Screen */
+        #game-over {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(139, 0, 0, 0.5); display: none; z-index: 150;
-            justify-content: center; align-items: center; flex-direction: column;
+            background: rgba(40, 0, 0, 0.9); display: none; z-index: 200;
+            flex-direction: column; justify-content: center; align-items: center;
         }
     </style>
 </head>
@@ -47,13 +46,15 @@
 <div id="game-wrapper">
     <div id="ui-layer">
         <h1>VOID AURA</h1>
-        <div class="subtitle">SOMETHING IS BEHIND YOU</div>
-        <button id="play-button">ENTER THE VOID</button>
+        <div class="subtitle">HE IS FASTER THAN YOU</div>
+        <button id="play-button">PLAY</button>
+        <p style="margin-top: 20px; color: #444; font-size: 0.8rem;">WASD: Move | Space: Jump | Shift: Crouch</p>
     </div>
 
-    <div id="death-screen">
-        <h1 style="color: white; text-shadow: none;">CAUGHT</h1>
-        <button onclick="location.reload()" style="background:none; border:1px solid white; color:white; padding:10px 20px; cursor:pointer;">TRY AGAIN</button>
+    <div id="game-over">
+        <h1 style="color: #ff0000; text-shadow: 0 0 30px black;">GAME OVER</h1>
+        <p style="letter-spacing: 3px;">THE RED BLOCK CAUGHT YOU</p>
+        <button onclick="location.reload()" style="margin-top:20px; padding:10px 30px; background:none; border:1px solid white; color:white; cursor:pointer;">RESTART</button>
     </div>
 
     <div id="reticle"></div>
@@ -63,45 +64,41 @@
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/PointerLockControls.js"></script>
 
 <script>
+    // Scene Setup
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
-    scene.fog = new THREE.Fog(0x000000, 1, 25); // Bohat zyada fog taake darr lage
+    scene.fog = new THREE.Fog(0x000000, 1, 20);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById('game-wrapper').appendChild(renderer.domElement);
 
+    // Player Group
     const player = new THREE.Group();
     player.position.set(0, 1.7, 0);
     scene.add(player);
     player.add(camera);
 
-    // Flashlight (Player ke paas sirf aik halki light hai)
-    const flashlight = new THREE.SpotLight(0xffffff, 2, 20, Math.PI/6, 0.5);
-    camera.add(flashlight);
-    flashlight.target.position.set(0, 0, -1);
-    camera.add(flashlight.target);
+    // Light (Flashlight)
+    const light = new THREE.SpotLight(0xffffff, 1.5, 15, Math.PI/6, 0.5);
+    camera.add(light);
+    light.target.position.set(0, 0, -1);
+    camera.add(light.target);
 
     // Floor
-    const grid = new THREE.GridHelper(200, 100, 0x110000, 0x050505);
+    const grid = new THREE.GridHelper(200, 100, 0x220000, 0x050505);
     scene.add(grid);
 
-    // STALKER (Woh cheez jo peecha karegi)
-    const stalkerGeo = new THREE.BoxGeometry(1, 4, 1);
-    const stalkerMat = new THREE.MeshBasicMaterial({ color: 0x000000 }); // Kaali parchayi
-    const stalker = new THREE.Mesh(stalkerGeo, stalkerMat);
-    stalker.position.set(0, 2, 30); // Door se start hoga
+    // RED BLOCK (The Chaser)
+    const stalker = new THREE.Mesh(
+        new THREE.BoxGeometry(1.2, 3, 1.2),
+        new THREE.MeshBasicMaterial({ color: 0xff0000 })
+    );
+    stalker.position.set(10, 1.5, 20); // Start position
     scene.add(stalker);
 
-    // Gun
-    const gun = new THREE.Mesh(
-        new THREE.BoxGeometry(0.05, 0.1, 0.5),
-        new THREE.MeshStandardMaterial({ color: 0x111111 })
-    );
-    gun.position.set(0.3, -0.3, -0.5);
-    camera.add(gun);
-
+    // Controls Logic
     const controls = new THREE.PointerLockControls(camera, document.body);
     const playBtn = document.getElementById('play-button');
     const ui = document.getElementById('ui-layer');
@@ -109,28 +106,32 @@
     playBtn.onclick = () => controls.lock();
     controls.addEventListener('lock', () => { 
         ui.style.opacity = '0'; 
-        setTimeout(()=> ui.style.display = 'none', 1000);
+        setTimeout(()=> ui.style.display = 'none', 800);
         document.getElementById('reticle').style.display = 'block';
     });
 
     let moveF = false, moveB = false, moveL = false, moveR = false, isCrouching = false, canJump = false;
     let velocity = new THREE.Vector3();
+    
+    // Normal Speed Config
+    const PLAYER_SPEED = 28.0; 
+    const STALKER_SPEED = PLAYER_SPEED * 1.01; // 1% faster than player
 
-    document.addEventListener('keydown', (e) => {
+    document.onkeydown = (e) => {
         if(e.code === 'KeyW') moveF = true;
         if(e.code === 'KeyS') moveB = true;
         if(e.code === 'KeyA') moveL = true;
         if(e.code === 'KeyD') moveR = true;
-        if(e.code === 'Space' && canJump) { velocity.y = 7; canJump = false; }
+        if(e.code === 'Space' && canJump) { velocity.y = 8; canJump = false; }
         if(e.code === 'ShiftLeft') isCrouching = true;
-    });
-    document.addEventListener('keyup', (e) => {
+    };
+    document.onkeyup = (e) => {
         if(e.code === 'KeyW') moveF = false;
         if(e.code === 'KeyS') moveB = false;
         if(e.code === 'KeyA') moveL = false;
         if(e.code === 'KeyD') moveR = false;
         if(e.code === 'ShiftLeft') isCrouching = false;
-    });
+    };
 
     let lastTime = performance.now();
     function animate() {
@@ -139,37 +140,39 @@
         const delta = (time - lastTime) / 1000;
 
         if (controls.isLocked) {
-            // Speed (Horror game ke liye thori slow)
-            const friction = 10, speed = 30;
+            // Player Physics
+            const friction = 10;
             velocity.x -= velocity.x * friction * delta;
             velocity.z -= velocity.z * friction * delta;
-            velocity.y -= 20 * delta;
+            velocity.y -= 22 * delta; // Gravity
 
-            if (moveF) velocity.z -= speed * delta;
-            if (moveB) velocity.z += speed * delta;
-            if (moveL) velocity.x -= speed * delta;
-            if (moveR) velocity.x += speed * delta;
+            if (moveF) velocity.z -= PLAYER_SPEED * delta;
+            if (moveB) velocity.z += PLAYER_SPEED * delta;
+            if (moveL) velocity.x -= PLAYER_SPEED * delta;
+            if (moveR) velocity.x += PLAYER_SPEED * delta;
 
             controls.moveRight(velocity.x * delta);
             controls.moveForward(-velocity.z * delta);
 
-            let tH = isCrouching ? 0.8 : 1.7;
-            player.position.y += (tH - player.position.y) * 0.1;
+            // Crouch & Jump Logic
+            let targetHeight = isCrouching ? 0.8 : 1.7;
+            player.position.y += (targetHeight - player.position.y) * 0.12;
             player.position.y += velocity.y * delta;
 
-            if (player.position.y < tH) { velocity.y = 0; player.position.y = tH; canJump = true; }
+            if (player.position.y < targetHeight) {
+                velocity.y = 0; player.position.y = targetHeight; canJump = true;
+            }
 
-            // STALKER AI (Peecha karne wali cheez)
-            const stalkerSpeed = 3.5; // Player se thora slow taake bhag saken
+            // STALKER AI (1% Faster)
             const dir = new THREE.Vector3().subVectors(player.position, stalker.position).normalize();
-            stalker.position.x += dir.x * stalkerSpeed * delta;
-            stalker.position.z += dir.z * stalkerSpeed * delta;
-            stalker.lookAt(player.position.x, 2, player.position.z);
+            stalker.position.x += dir.x * (STALKER_SPEED * 0.15) * delta; // Scaled for frame rate
+            stalker.position.z += dir.z * (STALKER_SPEED * 0.15) * delta;
+            stalker.lookAt(player.position.x, 1.5, player.position.z);
 
-            // Distance Check (Agar stalker qareeb aa gaya)
+            // Death Check
             const dist = player.position.distanceTo(stalker.position);
-            if(dist < 2) {
-                document.getElementById('death-screen').style.display = 'flex';
+            if(dist < 1.8) {
+                document.getElementById('game-over').style.display = 'flex';
                 controls.unlock();
             }
         }
@@ -178,11 +181,11 @@
     }
     animate();
 
-    window.addEventListener('resize', () => {
+    window.onresize = () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    };
 </script>
 </body>
 </html>
