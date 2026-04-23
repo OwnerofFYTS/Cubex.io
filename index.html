@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horror Game - SkyViper</title>
     <style>
-        /* CSS Section */
         body {
             margin: 0;
+            padding: 0;
             overflow: hidden;
-            background: #000; /* Zameen bilkul black */
+            background-color: #000;
             color: white;
             font-family: 'Courier New', Courier, monospace;
+            user-select: none;
         }
 
         #game-ui {
@@ -19,15 +20,14 @@
             top: 20px;
             left: 20px;
             z-index: 10;
-            pointer-events: none;
         }
 
         #stamina-container {
             width: 200px;
-            height: 10px;
-            border: 2px solid #555;
+            height: 12px;
+            border: 2px solid #444;
             background: #222;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
 
         #stamina-bar {
@@ -41,6 +41,15 @@
             display: block;
             background: #000;
         }
+
+        #instructions {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -49,99 +58,108 @@
         <div id="stamina-container">
             <div id="stamina-bar"></div>
         </div>
-        <p id="status">W A S D: Move | Shift: Sprint | C: Crouch | Space: Jump</p>
+        <div id="label">STAMINA</div>
     </div>
+
+    <div id="instructions">W,A,S,D to Move | Shift to Sprint | C to Crouch | Space to Jump</div>
 
     <canvas id="gameCanvas"></canvas>
 
     <script>
-        // JAVASCRIPT Section
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const staminaBar = document.getElementById('stamina-bar');
 
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        // Resize function
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
 
         let player = {
             x: canvas.width / 2,
             y: canvas.height / 2,
-            size: 45,
-            speed: 3,
+            size: 50,
+            baseSpeed: 3,
             stamina: 100,
             yVelocity: 0,
-            isJumping: false
+            isJumping: false,
+            groundY: canvas.height / 2
         };
 
         const keys = {};
-        window.addEventListener('keydown', e => keys[e.code] = true);
-        window.addEventListener('keyup', e => keys[e.code] = false);
 
-        function update() {
-            // Black Background
+        // Keyboard Events
+        window.addEventListener('keydown', (e) => { keys[e.code] = true; });
+        window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+        function gameLoop() {
+            // 1. Black Ground (Clear Screen)
             ctx.fillStyle = "black";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            let currentSpeed = player.speed;
+            let currentSpeed = player.baseSpeed;
 
-            // Crouch Logic
+            // 2. Crouch Logic (C)
             if (keys['KeyC']) {
-                currentSpeed = 1.5; 
-                player.size = 35;
+                currentSpeed = 1.5;
+                player.displaySize = 35;
             } else {
-                player.size = 45;
+                player.displaySize = 50;
             }
 
-            // Sprint & Stamina Logic
+            // 3. Sprint & Stamina Logic (Shift)
             if (keys['ShiftLeft'] && player.stamina > 0 && !keys['KeyC']) {
-                currentSpeed = 6.5;
-                player.stamina -= 0.8;
+                currentSpeed = 7;
+                player.stamina -= 1.0; // Sprinting uses stamina
             } else {
-                if (player.stamina < 100) player.stamina += 0.4;
+                if (player.stamina < 100) player.stamina += 0.5; // Recovery
             }
 
-            // Movement (WASD)
+            // 4. Movement (WASD)
             if (keys['KeyW']) player.y -= currentSpeed;
             if (keys['KeyS']) player.y += currentSpeed;
             if (keys['KeyA']) player.x -= currentSpeed;
             if (keys['KeyD']) player.x += currentSpeed;
 
-            // Simple Jump Logic
+            // 5. Jump Logic (Space)
             if (keys['Space'] && !player.isJumping) {
                 player.isJumping = true;
-                player.yVelocity = -12;
+                player.yVelocity = -15;
             }
 
             if (player.isJumping) {
                 player.y += player.yVelocity;
-                player.yVelocity += 0.6; 
-                
-                // Screen boundaries takay player gayab na ho
+                player.yVelocity += 0.8; // Gravity
+
+                // Boundary check to stop falling
                 if (player.y > canvas.height - 50) {
                     player.y = canvas.height - 50;
                     player.isJumping = false;
                 }
             }
 
-            // UI Update
-            staminaBar.style.width = player.stamina + "%";
-            staminaBar.style.backgroundColor = player.stamina < 25 ? "red" : "#0f0";
+            // 6. UI Update
+            staminaBar.style.width = Math.max(0, player.stamina) + "%";
+            staminaBar.style.backgroundColor = player.stamina < 30 ? "#ff0000" : "#00ff00";
 
-            // Draw Default Churail (Emoji)
-            ctx.font = `${player.size}px serif`;
+            // 7. Draw Churail (Default Emoji)
+            ctx.font = `${player.displaySize}px serif`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText("🧛‍♀️", player.x, player.y);
 
-            requestAnimationFrame(update);
+            requestAnimationFrame(gameLoop);
         }
 
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
+        // Click to start ensures the browser focuses the game
+        window.addEventListener('click', () => {
+            console.log("Game Started");
+        }, { once: true });
 
-        update();
+        gameLoop();
     </script>
 </body>
 </html>
