@@ -3,38 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Void Aura | Horror Game</title>
+    <title>Void Aura</title>
     <style>
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
             background-color: #000;
             color: #4a0000;
             font-family: 'Courier New', Courier, monospace;
             overflow: hidden;
-            cursor: none;
         }
 
-        /* Camera / Player Container */
-        #world {
-            position: relative;
-            width: 100%;
-            height: 100vh;
-            transition: transform 0.2s ease; /* Crouch effect ke liye */
-        }
-
-        #game-screen {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            text-align: center;
-            transition: all 0.1s linear;
-        }
-
+        /* Flashlight - pointer-events none taake button click ho sake */
         #flashlight {
             position: fixed;
             top: 0; left: 0;
@@ -44,8 +24,33 @@
             z-index: 100;
         }
 
+        #world {
+            position: relative;
+            width: 100%; height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.2s ease;
+        }
+
+        #game-content {
+            text-align: center;
+            transition: transform 0.1s linear;
+        }
+
         h1 { font-size: 4rem; letter-spacing: 15px; text-shadow: 0 0 10px #ff0000; }
-        
+
+        .btn-start {
+            padding: 15px 30px;
+            background: transparent;
+            border: 1px solid #4a0000;
+            color: #8b0000;
+            font-size: 1.2rem;
+            cursor: pointer;
+            position: relative;
+            z-index: 110; /* Button ko sab se upar rakha hai */
+        }
+
         #jumpscare {
             display: none;
             position: fixed;
@@ -55,13 +60,11 @@
             z-index: 1000;
         }
 
-        #status-bar {
+        #status {
             position: fixed;
-            bottom: 20px;
-            left: 20px;
-            color: #555;
-            font-size: 0.8rem;
-            z-index: 110;
+            bottom: 20px; left: 20px;
+            font-size: 0.9rem;
+            color: #333;
         }
     </style>
 </head>
@@ -70,74 +73,69 @@
     <div id="flashlight"></div>
 
     <div id="world">
-        <div id="game-screen">
-            <h1 id="title">VOID AURA</h1>
-            <p id="ui-text">WASD se chalo... C se jhuko...</p>
-            <button style="color:#8b0000; background:none; border:1px solid #4a0000; padding:10px; cursor:pointer;" onclick="this.style.display='none'">START SENSORS</button>
+        <div id="game-content">
+            <h1>VOID AURA</h1>
+            <p id="msg">Andhera tumhe dekh raha hai...</p>
+            <button class="btn-start" onclick="startGame()">PLAY / START SENSORS</button>
         </div>
     </div>
 
     <div id="jumpscare"></div>
-    <div id="status-bar">STATUS: STANDING</div>
+    <div id="status">STATUS: STANDING</div>
 
     <audio id="scare-sound" src="https://www.soundjay.com/human/sounds/shriek-01.mp3"></audio>
 
     <script>
         const flashlight = document.getElementById('flashlight');
         const world = document.getElementById('world');
-        const gameScreen = document.getElementById('game-screen');
-        const statusBar = document.getElementById('status-bar');
-        
-        let posX = 0;
-        let posY = 0;
+        const gameContent = document.getElementById('game-content');
+        const statusText = document.getElementById('status');
+        const jumpscare = document.getElementById('jumpscare');
+        const scareSound = document.getElementById('scare-sound');
+
+        let x = 0, y = 0, z = 1;
         let isCrouching = false;
 
-        // Flashlight Follow
+        // Flashlight follow mouse
         document.addEventListener('mousemove', (e) => {
             flashlight.style.background = `radial-gradient(circle 150px at ${e.clientX}px ${e.clientY}px, transparent 10%, rgba(0, 0, 0, 0.98) 80%)`;
         });
 
-        // Movement & Crouch Logic
+        // Movement Logic
         document.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
-            const speed = isCrouching ? 5 : 15; // Crouch mein speed kam
+            if (key === 'w') z += 0.05; // Agey (Zoom in)
+            if (key === 's') z -= 0.05; // Peeche (Zoom out)
+            if (key === 'a') x += 20;   // Left
+            if (key === 'd') x -= 20;   // Right
 
-            if (key === 'w') posY += speed;
-            if (key === 's') posY -= speed;
-            if (key === 'a') posX += speed;
-            if (key === 'd') posX -= speed;
-
-            // Crouch toggle
             if (key === 'c') {
                 isCrouching = true;
-                world.style.transform = "translateY(50px)"; // Screen niche ho jayegi
-                statusBar.innerText = "STATUS: CROUCHING";
-                statusBar.style.color = "red";
+                world.style.transform = "translateY(100px)";
+                statusText.innerText = "STATUS: CROUCHED";
+                console.log("Crouched");
             }
 
-            // Apply Movement
-            gameScreen.style.transform = `translate(${posX}px, ${posY}px)`;
+            gameContent.style.transform = `translate(${x}px, ${y}px) scale(${z})`;
         });
 
         document.addEventListener('keyup', (e) => {
             if (e.key.toLowerCase() === 'c') {
                 isCrouching = false;
-                world.style.transform = "translateY(0px)"; // Screen wapas upar
-                statusBar.innerText = "STATUS: STANDING";
-                statusBar.style.color = "#555";
+                world.style.transform = "translateY(0px)";
+                statusText.innerText = "STATUS: STANDING";
             }
         });
 
-        // Random Scare Logic (Pichle code ki tarah)
-        setTimeout(() => {
-            if(Math.random() > 0.5) {
-                const jumpscare = document.getElementById('jumpscare');
-                const scareSound = document.getElementById('scare-sound');
+        function startGame() {
+            document.getElementById('msg').innerText = "Ab bhago...";
+            // Jumpscare 5 second baad trigger hoga
+            setTimeout(() => {
                 jumpscare.style.display = 'block';
-                scareSound.play();
-                setTimeout(() => { jumpscare.style.display = 'none'; }, 1000);
-            }
-        }, 10000);
+                scareSound.play().catch(e => console.log("Audio play error"));
+                setTimeout(() => { jumpscare.style.display = 'none'; }, 1500);
+            }, 5000);
+        }
     </script>
 </body>
 </html>
