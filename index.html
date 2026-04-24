@@ -3,141 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Void Aura | Horror Game</title>
+    <title>The Dark Corridor - Horror Game</title>
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000;
-            color: #4a0000;
-            font-family: 'Courier New', Courier, monospace;
-            overflow: hidden;
-            cursor: none;
-        }
-
-        /* Camera / Player Container */
-        #world {
-            position: relative;
-            width: 100%;
-            height: 100vh;
-            transition: transform 0.2s ease; /* Crouch effect ke liye */
-        }
-
-        #game-screen {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            text-align: center;
-            transition: all 0.1s linear;
-        }
-
-        #flashlight {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: radial-gradient(circle 150px at center, transparent 10%, rgba(0, 0, 0, 0.98) 100%);
-            pointer-events: none;
-            z-index: 100;
-        }
-
-        h1 { font-size: 4rem; letter-spacing: 15px; text-shadow: 0 0 10px #ff0000; }
-        
-        #jumpscare {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: url('https://i.imgur.com/vH97Z9O.jpg') center/cover;
-            z-index: 1000;
-        }
-
-        #status-bar {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            color: #555;
-            font-size: 0.8rem;
-            z-index: 110;
-        }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; }
+        #ui { position: absolute; bottom: 20px; left: 20px; color: red; font-size: 20px; text-shadow: 2px 2px #000; pointer-events: none; }
+        #instructions { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center; }
     </style>
 </head>
 <body>
 
-    <div id="flashlight"></div>
-
-    <div id="world">
-        <div id="game-screen">
-            <h1 id="title">VOID AURA</h1>
-            <p id="ui-text">WASD se chalo... C se jhuko...</p>
-            <button style="color:#8b0000; background:none; border:1px solid #4a0000; padding:10px; cursor:pointer;" onclick="this.style.display='none'">START SENSORS</button>
-        </div>
+    <div id="instructions">
+        <h1>THE DARK CORRIDOR</h1>
+        <p>Click to Start</p>
+        <p>(W,A,S,D to Walk | Mouse to Look)</p>
     </div>
 
-    <div id="jumpscare"></div>
-    <div id="status-bar">STATUS: STANDING</div>
+    <div id="ui">BATTERY: 100%</div>
 
-    <audio id="scare-sound" src="https://www.soundjay.com/human/sounds/shriek-01.mp3"></audio>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/PointerLockControls.js"></script>
 
     <script>
-        const flashlight = document.getElementById('flashlight');
-        const world = document.getElementById('world');
-        const gameScreen = document.getElementById('game-screen');
-        const statusBar = document.getElementById('status-bar');
-        
-        let posX = 0;
-        let posY = 0;
-        let isCrouching = false;
+        let scene, camera, renderer, controls, flashlight;
+        let ghost;
 
-        // Flashlight Follow
-        document.addEventListener('mousemove', (e) => {
-            flashlight.style.background = `radial-gradient(circle 150px at ${e.clientX}px ${e.clientY}px, transparent 10%, rgba(0, 0, 0, 0.98) 80%)`;
-        });
+        function init() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.15); // Dhund (Fog)
 
-        // Movement & Crouch Logic
-        document.addEventListener('keydown', (e) => {
-            const key = e.key.toLowerCase();
-            const speed = isCrouching ? 5 : 15; // Crouch mein speed kam
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
 
-            if (key === 'w') posY += speed;
-            if (key === 's') posY -= speed;
-            if (key === 'a') posX += speed;
-            if (key === 'd') posX -= speed;
+            // Floor
+            const floorGeo = new THREE.PlaneGeometry(100, 100);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            scene.add(floor);
 
-            // Crouch toggle
-            if (key === 'c') {
-                isCrouching = true;
-                world.style.transform = "translateY(50px)"; // Screen niche ho jayegi
-                statusBar.innerText = "STATUS: CROUCHING";
-                statusBar.style.color = "red";
+            // Walls (Corridor)
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x050505 });
+            for(let i = -10; i < 10; i++) {
+                const wallLeft = new THREE.Mesh(new THREE.BoxGeometry(1, 5, 10), wallMat);
+                wallLeft.position.set(-3, 2.5, i * 10);
+                scene.add(wallLeft);
+                
+                const wallRight = new THREE.Mesh(new THREE.BoxGeometry(1, 5, 10), wallMat);
+                wallRight.position.set(3, 2.5, i * 10);
+                scene.add(wallRight);
             }
 
-            // Apply Movement
-            gameScreen.style.transform = `translate(${posX}px, ${posY}px)`;
-        });
+            // Flashlight (SpotLight)
+            flashlight = new THREE.SpotLight(0xffffff, 2, 15, Math.PI / 6, 0.5);
+            camera.add(flashlight);
+            flashlight.position.set(0, 0, 0);
+            flashlight.target = new THREE.Object3D();
+            camera.add(flashlight.target);
+            flashlight.target.position.set(0, 0, -1);
+            scene.add(camera);
 
-        document.addEventListener('keyup', (e) => {
-            if (e.key.toLowerCase() === 'c') {
-                isCrouching = false;
-                world.style.transform = "translateY(0px)"; // Screen wapas upar
-                statusBar.innerText = "STATUS: STANDING";
-                statusBar.style.color = "#555";
-            }
-        });
+            // Ghost (Scary Cube for now)
+            const ghostGeo = new THREE.BoxGeometry(1, 2, 1);
+            const ghostMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
+            ghost = new THREE.Mesh(ghostGeo, ghostMat);
+            ghost.position.set(0, 1, -15);
+            scene.add(ghost);
 
-        // Random Scare Logic (Pichle code ki tarah)
-        setTimeout(() => {
-            if(Math.random() > 0.5) {
-                const jumpscare = document.getElementById('jumpscare');
-                const scareSound = document.getElementById('scare-sound');
-                jumpscare.style.display = 'block';
-                scareSound.play();
-                setTimeout(() => { jumpscare.style.display = 'none'; }, 1000);
+            // Controls
+            controls = new THREE.PointerLockControls(camera, document.body);
+            document.body.addEventListener('click', () => {
+                controls.lock();
+                document.getElementById('instructions').style.display = 'none';
+            });
+
+            animate();
+        }
+
+        // Movement Logic
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        const onKeyDown = (e) => {
+            if (e.code === 'KeyW') moveForward = true;
+            if (e.code === 'KeyS') moveBackward = true;
+        };
+        const onKeyUp = (e) => {
+            if (e.code === 'KeyW') moveForward = false;
+            if (e.code === 'KeyS') moveBackward = false;
+        };
+        document.addEventListener('keydown', onKeyDown);
+        document.addEventListener('keyup', onKeyUp);
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (controls.isLocked) {
+                if (moveForward) controls.moveForward(0.05);
+                if (moveBackward) controls.moveForward(-0.05);
+
+                // Simple Ghost Jumpscare Logic
+                let dist = camera.position.distanceTo(ghost.position);
+                if(dist < 5) {
+                    ghost.material.opacity = 1; // Ghost appears
+                    ghost.position.z += 0.1;   // Ghost moves towards you
+                }
             }
-        }, 10000);
+
+            renderer.render(scene, camera);
+        }
+
+        init();
     </script>
 </body>
 </html>
