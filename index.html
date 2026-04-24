@@ -3,58 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Void Aura</title>
+    <title>Void Aura | Horror Game</title>
     <style>
+        /* --- CSS STYLES --- */
         body, html {
-            margin: 0; padding: 0;
-            width: 100%; height: 100%;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
             background-color: #000;
             color: #4a0000;
             font-family: 'Courier New', Courier, monospace;
             overflow: hidden;
+            cursor: none; /* Mouse hide kar diya taake flashlight real lage */
         }
 
-        /* Flashlight effect */
+        #game-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            z-index: 10;
+        }
+
+        /* Flashlight Effect */
         #flashlight {
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: radial-gradient(circle 150px at center, transparent 10%, rgba(0, 0, 0, 0.98) 100%);
             pointer-events: none;
             z-index: 100;
         }
 
-        #world {
-            position: relative;
-            width: 100%; height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: transform 0.2s ease;
+        h1 {
+            font-size: 4rem;
+            letter-spacing: 15px;
+            text-shadow: 0 0 10px #ff0000;
+            margin-bottom: 10px;
         }
-
-        #game-content {
-            text-align: center;
-        }
-
-        h1 { font-size: 4rem; letter-spacing: 15px; text-shadow: 0 0 10px #ff0000; }
 
         .btn-start {
             padding: 15px 30px;
-            background: #111;
+            background: transparent;
             border: 1px solid #4a0000;
             color: #8b0000;
             font-size: 1.2rem;
             cursor: pointer;
-            position: relative;
+            transition: 0.5s;
+        }
+
+        .btn-start:hover {
+            background: #4a0000;
+            color: #fff;
+            box-shadow: 0 0 20px #ff0000;
+        }
+
+        /* Jumpscare Image Style */
+        #jumpscare {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://i.imgur.com/vH97Z9O.jpg') center/cover; /* Aap apni image change kar sakte hain */
             z-index: 1000;
         }
 
-        #status {
-            position: fixed;
-            bottom: 20px; left: 20px;
-            font-size: 0.9rem;
-            color: #333;
+        #ui-text {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            max-width: 500px;
         }
     </style>
 </head>
@@ -62,57 +86,52 @@
 
     <div id="flashlight"></div>
 
-    <div id="world">
-        <div id="game-content">
-            <h1>VOID AURA</h1>
-            <p id="msg">Movement Sensors Active</p>
-            <button class="btn-start" id="startBtn" onclick="this.style.display='none'">PLAY GAME</button>
-        </div>
+    <div id="game-screen">
+        <h1 id="title">VOID AURA</h1>
+        <div id="ui-text">Andheray mein kuch hai jo tumhara intezar kar raha hai...</div>
+        <br>
+        <button class="btn-start" onclick="initGame()">VOID MEIN DAALEN</button>
     </div>
 
-    <div id="status">STATUS: STANDING</div>
+    <div id="jumpscare"></div>
+
+    <audio id="scare-sound" src="https://www.soundjay.com/human/sounds/shriek-01.mp3"></audio>
 
     <script>
+        /* --- JAVASCRIPT LOGIC --- */
         const flashlight = document.getElementById('flashlight');
-        const world = document.getElementById('world');
-        const gameContent = document.getElementById('game-content');
-        const statusText = document.getElementById('status');
+        const jumpscare = document.getElementById('jumpscare');
+        const scareSound = document.getElementById('scare-sound');
+        const uiText = document.getElementById('ui-text');
 
-        let posX = 0, posY = 0;
-        let isCrouching = false;
-
-        // Flashlight Logic
+        // Mouse move hone pe flashlight move hogi
         document.addEventListener('mousemove', (e) => {
-            flashlight.style.background = `radial-gradient(circle 180px at ${e.clientX}px ${e.clientY}px, transparent 10%, rgba(0, 0, 0, 0.98) 80%)`;
+            const x = e.clientX;
+            const y = e.clientY;
+            flashlight.style.background = `radial-gradient(circle 150px at ${x}px ${y}px, transparent 10%, rgba(0, 0, 0, 0.98) 80%)`;
         });
 
-        // Movement (W=Agey, S=Peeche, A=Left, D=Right)
-        document.addEventListener('keydown', (e) => {
-            const key = e.key.toLowerCase();
-            let moveStep = isCrouching ? 10 : 20;
+        function initGame() {
+            uiText.innerText = "Tumne ghalti kar di... Andhera kareeb aa raha hai.";
+            
+            // 3 se 6 seconds ke beech achanak jumpscare aayega
+            let randomTime = Math.random() * 3000 + 3000;
 
-            if (key === 'w') posY += moveStep;
-            if (key === 's') posY -= moveStep;
-            if (key === 'a') posX += moveStep;
-            if (key === 'd') posX -= moveStep;
+            setTimeout(() => {
+                triggerScare();
+            }, randomTime);
+        }
 
-            if (key === 'c') {
-                isCrouching = true;
-                world.style.transform = "translateY(80px)";
-                statusText.innerText = "STATUS: CROUCHED";
-                console.log("Crouched");
-            }
-
-            gameContent.style.transform = `translate(${posX}px, ${posY}px)`;
-        });
-
-        document.addEventListener('keyup', (e) => {
-            if (e.key.toLowerCase() === 'c') {
-                isCrouching = false;
-                world.style.transform = "translateY(0px)";
-                statusText.innerText = "STATUS: STANDING";
-            }
-        });
+        function triggerScare() {
+            jumpscare.style.display = 'block';
+            scareSound.play();
+            
+            // 2 second baad wapas normal ho jayega ya game reset
+            setTimeout(() => {
+                jumpscare.style.display = 'none';
+                uiText.innerText = "Woh chala gaya... filhaal ke liye.";
+            }, 1500);
+        }
     </script>
 </body>
 </html>
